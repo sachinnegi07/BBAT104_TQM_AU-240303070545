@@ -1,5 +1,6 @@
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 # Project and database location
@@ -18,7 +19,7 @@ def get_connection():
 
 
 def initialize_database():
-    with get_connection() as conn:
+    with closing(get_connection()) as conn, conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS students (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
