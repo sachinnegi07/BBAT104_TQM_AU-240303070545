@@ -1,0 +1,25 @@
+# Python Virtual Environment
+.venv/
+venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Local Database
+*.db
+*.sqlite3
+
+# Environment Secrets
+.env
+.env.*
+
+# Log Files
+*.log
+
+# Testing Cache
+.pytest_cache/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
