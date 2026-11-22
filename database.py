@@ -70,6 +70,66 @@ def initialize_database():
                     REFERENCES students(id)
                     ON DELETE RESTRICT
             );
+
+            -- ==========================================
+            -- REVIEW 4: COMPLAINT DELETION AUDIT TABLE
+            -- ==========================================
+
+            CREATE TABLE IF NOT EXISTS complaint_delete_audit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                complaint_id INTEGER NOT NULL,
+                student_id INTEGER NOT NULL,
+                student_code TEXT,
+                student_name TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT NOT NULL,
+                complaint_created_at TEXT,
+                deleted_at TEXT NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS
+                idx_complaint_delete_audit_complaint_id
+            ON complaint_delete_audit(complaint_id);
+
+            -- ==========================================
+            -- AUTOMATIC COMPLAINT DELETION AUDIT
+            -- ==========================================
+
+            CREATE TRIGGER IF NOT EXISTS
+                trg_complaint_delete_audit
+            BEFORE DELETE ON complaints
+            BEGIN
+                INSERT INTO complaint_delete_audit (
+                    complaint_id,
+                    student_id,
+                    student_code,
+                    student_name,
+                    title,
+                    description,
+                    status,
+                    complaint_created_at
+                )
+                VALUES (
+                    OLD.id,
+                    OLD.student_id,
+                    (
+                        SELECT student_code
+                        FROM students
+                        WHERE id = OLD.student_id
+                    ),
+                    (
+                        SELECT full_name
+                        FROM students
+                        WHERE id = OLD.student_id
+                    ),
+                    OLD.title,
+                    OLD.description,
+                    OLD.status,
+                    OLD.created_at
+                );
+            END;
         """)
 
         tables = conn.execute("""
