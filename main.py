@@ -2,6 +2,7 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from datetime import datetime
+from PIL import Image, ImageDraw
 
 from database import initialize_database
 from student_service import get_students
@@ -16,6 +17,83 @@ from complaint_ui import ComplaintManagementFrame
 from calendar_ui import HostelCalendarFrame
 
 from themes import apply_accent_theme, THEME_COLORS
+
+
+# ==========================================
+# SIDEBAR V3 - VECTOR NAVIGATION ICONS
+# No external icon files required
+# ==========================================
+
+def _draw_sidebar_icon(kind, color):
+    """Create a small transparent navigation icon using Pillow."""
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    pen = ImageDraw.Draw(img)
+    stroke = 5
+
+    if kind == "dashboard":
+        for box in (
+            (9, 9, 28, 28),
+            (36, 9, 55, 28),
+            (9, 36, 28, 55),
+            (36, 36, 55, 55),
+        ):
+            pen.rounded_rectangle(box, radius=4, outline=color, width=stroke)
+
+    elif kind == "students":
+        pen.ellipse((11, 10, 29, 28), outline=color, width=stroke)
+        pen.ellipse((37, 15, 51, 29), outline=color, width=4)
+        pen.arc((7, 27, 35, 59), 180, 360, fill=color, width=stroke)
+        pen.arc((33, 31, 57, 57), 180, 360, fill=color, width=4)
+
+    elif kind == "rooms":
+        pen.line([(10, 13), (10, 55)], fill=color, width=stroke)
+        pen.line([(54, 31), (54, 55)], fill=color, width=stroke)
+        pen.rounded_rectangle((12, 34, 52, 48), radius=3, outline=color, width=4)
+        pen.rounded_rectangle((15, 24, 29, 34), radius=3, outline=color, width=3)
+        pen.line([(10, 54), (54, 54)], fill=color, width=stroke)
+
+    elif kind == "allocations":
+        pen.rounded_rectangle((9, 10, 31, 53), radius=3, outline=color, width=4)
+        pen.line([(17, 21), (24, 21)], fill=color, width=4)
+        pen.line([(17, 31), (24, 31)], fill=color, width=4)
+        pen.line([(37, 22), (56, 22)], fill=color, width=4)
+        pen.line([(49, 15), (56, 22), (49, 29)], fill=color, width=4, joint="curve")
+        pen.line([(56, 42), (37, 42)], fill=color, width=4)
+        pen.line([(44, 35), (37, 42), (44, 49)], fill=color, width=4, joint="curve")
+
+    elif kind == "complaints":
+        pen.rounded_rectangle((9, 9, 55, 45), radius=7, outline=color, width=stroke)
+        pen.line([(19, 45), (19, 55), (32, 45)], fill=color, width=stroke, joint="curve")
+        pen.line([(32, 20), (32, 31)], fill=color, width=stroke)
+        pen.ellipse((29, 36, 35, 42), fill=color)
+
+    elif kind == "calendar":
+        pen.rounded_rectangle((11, 13, 53, 55), radius=5, outline=color, width=stroke)
+        pen.line([(12, 26), (52, 26)], fill=color, width=stroke)
+        pen.line([(23, 9), (23, 19)], fill=color, width=stroke)
+        pen.line([(41, 9), (41, 19)], fill=color, width=stroke)
+        for x, y in ((23, 36), (39, 36), (23, 46), (39, 46)):
+            pen.ellipse((x-3, y-3, x+3, y+3), fill=color)
+
+    else:
+        raise ValueError(f"Unknown sidebar icon: {kind}")
+
+    return img
+
+
+def make_sidebar_icon(kind, selected=False):
+    """Keep UI icons crisp and visible in both appearance modes."""
+    if selected:
+        light_color = dark_color = "#FFFFFF"
+    else:
+        light_color = "#334155"
+        dark_color = "#CED9E8"
+
+    return ctk.CTkImage(
+        light_image=_draw_sidebar_icon(kind, light_color),
+        dark_image=_draw_sidebar_icon(kind, dark_color),
+        size=(19, 19),
+    )
 
 
 # ==========================================
@@ -722,6 +800,7 @@ class HostelManagementApp(ctk.CTk):
         self.accent_theme_name = "Blue"
         self.active_page_name = None
         self.nav_buttons = {}
+        self.nav_icons = {}
 
         # Sidebar
         self.sidebar = ctk.CTkFrame(
@@ -736,20 +815,41 @@ class HostelManagementApp(ctk.CTk):
         )
         self.sidebar.grid_propagate(False)
 
-        ctk.CTkLabel(
-            self.sidebar,
-            text="HOSTEL HMS",
-            font=ctk.CTkFont(
-                size=24,
-                weight="bold"
-            )
-        ).pack(pady=(30, 5))
+        # Compact branding; same sidebar width and navigation structure.
+        brand = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        brand.pack(fill="x", padx=14, pady=(26, 30))
+
+        self.brand_logo = ctk.CTkLabel(
+            brand,
+            text="H",
+            width=42,
+            height=42,
+            corner_radius=12,
+            fg_color=THEME_COLORS[self.accent_theme_name]["primary"],
+            text_color="#FFFFFF",
+            font=ctk.CTkFont(size=23, weight="bold"),
+        )
+        self.brand_logo.pack(side="left", padx=(0, 10))
+
+        brand_text = ctk.CTkFrame(brand, fg_color="transparent")
+        brand_text.pack(side="left", fill="x", expand=True)
 
         ctk.CTkLabel(
-            self.sidebar,
-            text="BBAT104 | Q03",
-            font=ctk.CTkFont(size=13)
-        ).pack(pady=(0, 35))
+            brand_text,
+            text="HOSTEL HMS",
+            font=ctk.CTkFont(size=17, weight="bold"),
+            anchor="w",
+            height=23,
+        ).pack(anchor="w", fill="x")
+
+        ctk.CTkLabel(
+            brand_text,
+            text="BBAT104 | MANAGEMENT",
+            font=ctk.CTkFont(size=10),
+            text_color=("#64748B", "#A0AEC0"),
+            anchor="w",
+            height=17,
+        ).pack(anchor="w", fill="x")
 
         pages = [
             ("Dashboard", DashboardFrame),
@@ -760,23 +860,36 @@ class HostelManagementApp(ctk.CTk):
             ("Calendar", HostelCalendarFrame),
         ]
 
+        icon_types = {
+            "Dashboard": "dashboard",
+            "Students": "students",
+            "Rooms": "rooms",
+            "Allocations": "allocations",
+            "Complaints": "complaints",
+            "Calendar": "calendar",
+        }
+
         for name, frame_class in pages:
+            icon_kind = icon_types[name]
+            self.nav_icons[name] = {
+                "normal": make_sidebar_icon(icon_kind),
+                "selected": make_sidebar_icon(icon_kind, selected=True),
+            }
+
             button = ctk.CTkButton(
                 self.sidebar,
-                text=f"  {name}",
+                text=name,
+                image=self.nav_icons[name]["normal"],
+                compound="left",
                 height=44,
                 corner_radius=10,
-                border_spacing=10,
+                border_spacing=12,
                 anchor="w",
                 font=ctk.CTkFont(size=14),
                 command=lambda n=name, f=frame_class:
-                    self.show_page(n, f)
+                    self.show_page(n, f),
             )
-            button.pack(
-                fill="x",
-                padx=14,
-                pady=4
-            )
+            button.pack(fill="x", padx=14, pady=4)
             self.nav_buttons[name] = button
 
         # Appearance Mode
@@ -837,14 +950,14 @@ class HostelManagementApp(ctk.CTk):
 
     def style_navigation(self):
         colors = THEME_COLORS[self.accent_theme_name]
+        self.brand_logo.configure(fg_color=colors["primary"])
 
         for name, button in self.nav_buttons.items():
             selected = name == self.active_page_name
 
             button.configure(
-                fg_color=(
-                    colors["primary"] if selected else "transparent"
-                ),
+                image=self.nav_icons[name]["selected" if selected else "normal"],
+                fg_color=colors["primary"] if selected else "transparent",
                 hover_color=(
                     colors["hover"] if selected
                     else ("#E7ECF3", "#353E4B")
@@ -856,7 +969,7 @@ class HostelManagementApp(ctk.CTk):
                 font=ctk.CTkFont(
                     size=14,
                     weight="bold" if selected else "normal"
-                )
+                ),
             )
 
     def change_accent_theme(self, theme_name):
